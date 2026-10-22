@@ -1,4 +1,4 @@
-// `txtmap` is a parsing tool for `txtstar`, a custom plaintext format with internal and external links.
+// `txtmap` is an inter-file parsing tool for `txtstar`, a custom plaintext format with internal and external links.
 // Copyright (C) 2026  Miftah Els
 
 // This program is free software: you can redistribute it and/or modify
