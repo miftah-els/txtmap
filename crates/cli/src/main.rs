@@ -1,5 +1,5 @@
 // `txtmap` is an inter-file parsing tool for `txtstar`, a custom plaintext format with internal and external links.
-// Copyright (C) 2026  Miftah Els
+// Copyright (C) 2026  Miftah
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -13,3 +13,27 @@
 
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    cmd: Option<Cmds>
+}
+
+#[derive(Subcommand)]
+enum Cmds {
+    /// Initialize txtmap in current working directory
+    Init
+}
+
+fn main() {
+    let cli = Cli::parse();
+    if let Some(cmd) = cli.cmd {
+        match cmd {
+            Cmds::Init => lib::init()
+        }
+    }
+}
