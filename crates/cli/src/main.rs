@@ -29,11 +29,13 @@ enum Cmds {
     Init
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> { 
     let cli = Cli::parse();
     if let Some(cmd) = cli.cmd {
         match cmd {
-            Cmds::Init => lib::init()
+            Cmds::Init => lib::init()?
         }
     }
+
+    Ok(())
 }

@@ -14,6 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub fn init() {
-    todo!("init function body")
+/// Initialize txtmap in current working directory.
+/// 
+/// This will create the following files and directories:
+/// - `map` (input directory)
+/// - `terr` (output directory)
+/// - `style.css`
+/// - `.gitignore` (`terr` is ignored by default)
+/// - `txtmap.toml` (config)
+use std::fs;
+
+pub fn init() -> std::io::Result<()> {
+    fs::create_dir("./map")?;
+    fs::create_dir("./terr")?;
+    fs::write("./style.css", "// your css here\n")?;
+    fs::write("./.gitignore", "/terr\n")?;
+    fs::write("./txtmap.toml", "# your config here\n")?;
+    Ok(())
 }
