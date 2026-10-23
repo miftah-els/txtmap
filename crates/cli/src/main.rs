@@ -26,14 +26,17 @@ struct Cli {
 #[derive(Subcommand)]
 enum Cmds {
     /// Initialize txtmap in current working directory
-    Init
+    Init,
+    /// Build txtstar map directory into HTML artifacts
+    Build
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> { 
     let cli = Cli::parse();
     if let Some(cmd) = cli.cmd {
         match cmd {
-            Cmds::Init => lib::init()?
+            Cmds::Init => txtmap_lib::init()?,
+            Cmds::Build => txtmap_lib::build()?
         }
     }
 
