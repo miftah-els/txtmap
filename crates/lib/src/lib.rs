@@ -27,7 +27,7 @@ use std::fs;
 pub fn init() -> std::io::Result<()> {
     fs::create_dir("./map")?;
     fs::create_dir("./terr")?;
-    fs::write("./style.css", "// your css here\n")?;
+    fs::write("./style.css", "/* your css here */\n")?;
     fs::write("./.gitignore", "/terr\n")?;
     fs::write("./txtmap.toml", "# your config here\n")?;
     Ok(())
