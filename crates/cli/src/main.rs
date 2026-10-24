@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     if let Some(cmd) = cli.cmd {
         match cmd {
-            Cmds::Init => txtmap_lib::init()?,
+            Cmds::Init => txtmap_lib::init(None)?,
             Cmds::Build => txtmap_lib::build()?
         }
     }

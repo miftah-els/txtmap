@@ -21,6 +21,12 @@ use std::{
     path::{Path, PathBuf}
 };
 
+const CWD: &'static str = ".";
+const MAP_PATH: &'static str = "./map";
+const TERR_PATH: &'static str = "./terr";
+const STYLE_PATH: &'static str = "./styles.css";
+const CONFIG_PATH: &'static str = "./txtmap.toml";
+
 /// Initialize txtmap in current working directory.
 /// 
 /// This will create the following files and directories:
@@ -29,12 +35,20 @@ use std::{
 /// - `style.css`
 /// - `.gitignore` (`terr` is ignored by default)
 /// - `txtmap.toml` (config)
-pub fn init() -> std::io::Result<()> {
-    fs::create_dir("./map")?;
-    fs::create_dir("./terr")?;
-    fs::write("./style.css", "/* your css here */\n")?;
-    fs::write("./.gitignore", "/terr\n")?;
-    fs::write("./txtmap.toml", "# your config here\n")?;
+pub fn init(root_dir: Option<&Path>) -> std::io::Result<()> {
+    let root = if let Some(root) = root_dir {
+        root
+    } else {
+        Path::new(CWD)
+    };
+    
+    let fpath = |subpath: &str| root.join(subpath);
+
+    fs::create_dir(fpath(MAP_PATH))?;
+    fs::create_dir(fpath(TERR_PATH))?;
+    fs::write(fpath(STYLE_PATH), "/* your css here */\n")?;
+    fs::write(fpath("./.gitignore"), "/terr\n")?;
+    fs::write(fpath(CONFIG_PATH), "# your config here\n")?;
     Ok(())
 }
 
@@ -82,15 +96,94 @@ impl<'a> IntoIterator for &'a TxtStars {
     }
 }
 
-fn list_txtstars() -> std::io::Result<TxtStars> {
-    todo!()
+#[derive(Debug, Hash, PartialEq, Eq)]
+struct ListedPath {
+    path: PathBuf,
+    typ: ListedPathType
+}
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+enum ListedPathType {
+    File(ListedFileType),
+    Dir
+}
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+enum ListedFileType {
+    Txtstar,
+    Other
+}
+impl TryFrom<PathBuf> for ListedPath {
+    type Error = std::io::Error;
+    fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
+        todo!()   
+    }
+}
+impl ListedPath {
+    fn new(path: PathBuf, typ: ListedPathType) -> ListedPath {
+        ListedPath { path, typ }
+    }
+    fn pathbuf(self) -> PathBuf {
+        self.path
+    }
+    fn path(&self) -> &Path {
+        &self.path
+    }
+    fn typ(&self) -> &ListedPathType {
+        &self.typ
+    }
+}
+
+/// todo
+struct StructuredDirList {}
+
+struct DirLister {
+    /// A linear list of all paths in the dir.
+    dirlist: Vec<ListedPath>
+}
+impl DirLister {
+    fn new() -> Self {
+        Self { dirlist: Vec::new() }
+    }
+
+    fn walkdir(path: &Path) -> std::io::Result<Vec<ListedPath>> {
+        let mut paths: Vec<ListedPath> = Vec::new();
+
+        let dir_read = fs::read_dir(path)?;
+        for entry in dir_read {
+            let entry = entry?;
+            let mapped_path = ListedPath::try_from(entry.path())?;
+
+            match mapped_path.typ() {
+                ListedPathType::File(_) => {},
+                ListedPathType::Dir => {
+                    paths.extend(Self::walkdir(mapped_path.path())?);
+                }
+            }
+            paths.push(mapped_path);
+        }
+        
+        Ok(paths)
+    }
+
+    fn make_dirlist(&mut self) -> std::io::Result<()> {
+        self.dirlist = Self::walkdir(Path::new(CWD))?;
+        Ok(())
+    }
+
+    fn list_txtstars(&self) -> std::io::Result<TxtStars> {
+        let _ = self.dirlist;
+        todo!()
+    }
 }
 
 pub fn build() -> std::io::Result<()> {
     let mut blstore = BacklinkStore::new();
 
-    let txtstars = list_txtstars()?;
-    
+    let mut dir_lister = DirLister::new();
+    dir_lister.make_dirlist()?;
+    let txtstars = dir_lister.list_txtstars()?;
+
     let _ = blstore.load_txtstars(&txtstars);
 
     todo!()
@@ -99,10 +192,78 @@ pub fn build() -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
+    use std::{collections::HashSet, path};
+
+    fn init_on_tempdir() -> tempfile::TempDir {
+        let root_dir = tempfile::tempdir().expect("temp dir creation");
+        
+        init(
+            Some(root_dir.path())
+        ).expect("successful init");
+
+        root_dir
+    }
+
+    fn new_dummy_listed_path_type(is_dir: bool) -> ListedPathType {
+        if is_dir {
+            ListedPathType::Dir
+        } else {
+            ListedPathType::File(ListedFileType::Other)
+        }
+    }
+
+    fn new_dummy_listed_path(path: PathBuf, is_dir: bool) -> ListedPath {
+        ListedPath::new(
+            path,
+            new_dummy_listed_path_type(is_dir)
+        )
+    }
+
+    fn dir_entry_to_dummy_listed_path(entry: fs::DirEntry) -> ListedPath {
+        new_dummy_listed_path(
+            entry.path(),
+            entry.metadata().expect("valid metadata").is_dir()
+        )
+    }
+
+    fn correct_init_list(root: &Path) -> HashSet<ListedPath> {
+        let fpath = |subpath: &str| root.join(subpath);
+
+        HashSet::from([
+            new_dummy_listed_path(fpath(MAP_PATH), true),
+            new_dummy_listed_path(fpath(TERR_PATH), true),
+            new_dummy_listed_path(fpath(STYLE_PATH), false),
+            new_dummy_listed_path(fpath("./.gitignore"), false),
+            new_dummy_listed_path(fpath(CONFIG_PATH), false)
+        ])
+    }
 
     #[test]
-    fn test_backlinks_store_loading1<'a>() {
+    fn test_init() {
+        let root_dir = init_on_tempdir();
+
+        let dir_read = fs::read_dir(root_dir.path()).expect("dir read");
+        let list: Vec<ListedPath> = dir_read
+            .map(|r| r.expect("valid entry"))
+            .map(|entry| dir_entry_to_dummy_listed_path(entry))
+            .collect();
+
+        let root = root_dir.path();
+
+        let correct_list = correct_init_list(root);
+
+        let mut actual_list = HashSet::new();
+        for item in list {
+            if !actual_list.insert(item) {
+                panic!("duplicate filepath");
+            }
+        }
+
+        assert_eq!(actual_list, correct_list)
+    }
+
+    #[test]
+    fn test_backlinks_store_loading0<'a>() {
         let p_main = PathBuf::from("./main.txtstar");
         let p_sec = PathBuf::from("./sec.txtstar");
         let p_third = PathBuf::from("./third.txtstar");
@@ -143,5 +304,18 @@ mod tests {
         }
 
         assert_eq!(correct, real)
+    }
+
+    #[test]
+    fn test_dirlister_walkdir0() {
+        let root_dir = init_on_tempdir();
+        let root = root_dir.path();
+        let correct_list = correct_init_list(root);
+        let actual_list: HashSet<ListedPath> = DirLister::walkdir(root)
+            .expect("successful dirwalk")
+            .into_iter()
+            .collect();
+
+        assert_eq!(actual_list, correct_list)
     }
 }
