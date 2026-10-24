@@ -152,15 +152,15 @@ impl DirLister {
         let dir_read = fs::read_dir(path)?;
         for entry in dir_read {
             let entry = entry?;
-            let mapped_path = ListedPath::try_from(entry.path())?;
+            let listed_path = ListedPath::try_from(entry.path())?;
 
-            match mapped_path.typ() {
+            match listed_path.typ() {
                 ListedPathType::File(_) => {},
                 ListedPathType::Dir => {
-                    paths.extend(Self::walkdir(mapped_path.path())?);
+                    paths.extend(Self::walkdir(listed_path.path())?);
                 }
             }
-            paths.push(mapped_path);
+            paths.push(listed_path);
         }
         
         Ok(paths)
