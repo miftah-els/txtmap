@@ -104,18 +104,6 @@ struct ListedPath {
     path: PathBuf,
     typ: ListedPathType
 }
-
-#[derive(Debug, Hash, PartialEq, Eq)]
-enum ListedPathType {
-    File(ListedFileType),
-    Dir
-}
-
-#[derive(Debug, Hash, PartialEq, Eq)]
-enum ListedFileType {
-    Txtstar,
-    Other
-}
 impl From<PathBuf> for ListedPath {
     /// Return value should only contain `ListedPathType::File(ListedFileType::Txtstar)` (`X`)
     /// if the extension of the given path is exactly `TXTSTAR_EXT`.
@@ -153,6 +141,18 @@ impl ListedPath {
     fn typ(&self) -> &ListedPathType {
         &self.typ
     }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+enum ListedPathType {
+    File(ListedFileType),
+    Dir
+}
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+enum ListedFileType {
+    Txtstar,
+    Other
 }
 
 /// todo
