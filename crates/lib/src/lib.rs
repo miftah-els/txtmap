@@ -137,10 +137,7 @@ impl From<PathBuf> for ListedPath {
             }
         };
         
-        ListedPath {
-            path: value,
-            typ 
-        }
+        ListedPath::new(value, typ)
     }
 }
 impl ListedPath {
@@ -216,7 +213,7 @@ pub fn build() -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{collections::HashSet, path};
+    use std::{collections::HashSet};
 
     fn init_on_tempdir() -> tempfile::TempDir {
         let root_dir = tempfile::tempdir().expect("temp dir creation");
