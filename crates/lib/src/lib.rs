@@ -16,6 +16,7 @@
 
 use std::{
     collections::HashMap, 
+    ffi::OsStr, 
     fs, 
     iter::{IntoIterator, Iterator}, 
     path::{Path, PathBuf}
@@ -26,6 +27,8 @@ const MAP_PATH: &'static str = "./map";
 const TERR_PATH: &'static str = "./terr";
 const STYLE_PATH: &'static str = "./styles.css";
 const CONFIG_PATH: &'static str = "./txtmap.toml";
+
+const TXTSTAR_EXT: &'static str = "txtstar";
 
 /// Initialize txtmap in current working directory.
 /// 
@@ -113,10 +116,31 @@ enum ListedFileType {
     Txtstar,
     Other
 }
-impl TryFrom<PathBuf> for ListedPath {
-    type Error = std::io::Error;
-    fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
-        todo!()   
+impl From<PathBuf> for ListedPath {
+    /// Return value should only contain `ListedPathType::File(ListedFileType::Txtstar)` (`X`)
+    /// if the extension of the given path is exactly `TXTSTAR_EXT`.
+    /// 
+    /// This means that when `value.extension()` returns `None`,
+    /// it should not contain `X`.
+    fn from(value: PathBuf) -> Self {
+        let typ = if value.is_dir() {
+            ListedPathType::Dir
+        } else {
+            if &value.extension().unwrap_or(OsStr::new("")) == &OsStr::new(TXTSTAR_EXT) {
+                ListedPathType::File(
+                    ListedFileType::Txtstar
+                )
+            } else {
+                ListedPathType::File(
+                    ListedFileType::Other
+                )
+            }
+        };
+        
+        ListedPath {
+            path: value,
+            typ 
+        }
     }
 }
 impl ListedPath {
@@ -152,7 +176,7 @@ impl DirLister {
         let dir_read = fs::read_dir(path)?;
         for entry in dir_read {
             let entry = entry?;
-            let listed_path = ListedPath::try_from(entry.path())?;
+            let listed_path = ListedPath::from(entry.path());
 
             match listed_path.typ() {
                 ListedPathType::File(_) => {},
@@ -304,6 +328,68 @@ mod tests {
         }
 
         assert_eq!(correct, real)
+    }
+
+    #[test]
+    fn test_listed_path_from_pathbuf_on_txtstar() {
+        let dir = tempfile::tempdir().expect("temp dir creation");
+        
+        let fname = "testfile.txtstar";
+        
+        let path = dir.path().join(fname);
+
+        let _ = fs::File::create(&path).expect("file creation");
+
+        let actual_lpath = ListedPath::from(path.clone());
+        
+        let correct_lpath = ListedPath::new(
+            path,
+            ListedPathType::File(
+                ListedFileType::Txtstar
+            )
+        );
+
+        assert_eq!(actual_lpath, correct_lpath)
+    }
+    #[test]
+    fn test_listed_path_from_pathbuf_on_non_txtstar() {
+        let dir = tempfile::tempdir().expect("temp dir creation");
+        
+        let fname = "testfile";
+        
+        let path = dir.path().join(fname);
+
+        let _ = fs::File::create(&path).expect("file creation");
+
+        let actual_lpath = ListedPath::from(path.clone());
+        
+        let correct_lpath = ListedPath::new(
+            path,
+            ListedPathType::File(
+                ListedFileType::Other
+            )
+        );
+
+        assert_eq!(actual_lpath, correct_lpath)
+    }
+    #[test]
+    fn test_listed_path_from_pathbuf_on_dir() {
+        let dir = tempfile::tempdir().expect("temp dir creation");
+        
+        let fname = "testdir";
+        
+        let path = dir.path().join(fname);
+
+        fs::create_dir(&path).expect("dir creation");
+
+        let actual_lpath = ListedPath::from(path.clone());
+        
+        let correct_lpath = ListedPath::new(
+            path,
+            ListedPathType::Dir
+        );
+
+        assert_eq!(actual_lpath, correct_lpath)
     }
 
     #[test]
