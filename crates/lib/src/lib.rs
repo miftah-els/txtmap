@@ -112,16 +112,12 @@ impl From<PathBuf> for ListedPath {
     /// it should not contain `X`.
     fn from(value: PathBuf) -> Self {
         let typ = if value.is_dir() {
-            ListedPathType::Dir
+            ListedPathType::make_as_dir()
         } else {
             if &value.extension().unwrap_or(OsStr::new("")) == &OsStr::new(TXTSTAR_EXT) {
-                ListedPathType::File(
-                    ListedFileType::Txtstar
-                )
+                ListedPathType::make_as_txtstar()
             } else {
-                ListedPathType::File(
-                    ListedFileType::Other
-                )
+                ListedPathType::make_as_other()
             }
         };
         
@@ -147,6 +143,17 @@ impl ListedPath {
 enum ListedPathType {
     File(ListedFileType),
     Dir
+}
+impl ListedPathType {
+    fn make_as_dir() -> Self {
+        Self::Dir
+    }
+    fn make_as_txtstar() -> Self {
+        Self::File(ListedFileType::Txtstar)
+    }
+    fn make_as_other() -> Self {
+        Self::File(ListedFileType::Other)
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -227,9 +234,9 @@ mod tests {
 
     fn new_dummy_listed_path_type(is_dir: bool) -> ListedPathType {
         if is_dir {
-            ListedPathType::Dir
+            ListedPathType::make_as_dir()
         } else {
-            ListedPathType::File(ListedFileType::Other)
+            ListedPathType::make_as_other()
         }
     }
 
@@ -341,9 +348,7 @@ mod tests {
         
         let correct_lpath = ListedPath::new(
             path,
-            ListedPathType::File(
-                ListedFileType::Txtstar
-            )
+            ListedPathType::make_as_txtstar()
         );
 
         assert_eq!(actual_lpath, correct_lpath)
@@ -362,9 +367,7 @@ mod tests {
         
         let correct_lpath = ListedPath::new(
             path,
-            ListedPathType::File(
-                ListedFileType::Other
-            )
+            ListedPathType::make_as_other()
         );
 
         assert_eq!(actual_lpath, correct_lpath)
@@ -383,7 +386,7 @@ mod tests {
         
         let correct_lpath = ListedPath::new(
             path,
-            ListedPathType::Dir
+            ListedPathType::make_as_dir()
         );
 
         assert_eq!(actual_lpath, correct_lpath)
