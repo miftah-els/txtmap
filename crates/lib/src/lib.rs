@@ -56,6 +56,8 @@ pub fn init(root_dir: Option<&Path>) -> std::io::Result<()> {
 }
 
 type Backlinks<'a> = Vec<&'a Path>;
+/// Directory of link-backlink mappings
+/// created through loading [TxtStars].
 struct BacklinkStore<'a> {
     store: HashMap<&'a Path, Backlinks<'a>>
 }
@@ -77,6 +79,8 @@ impl<'a> BacklinkStore<'a> {
     }
 }
 
+/// Directory of listed TxtStar files.
+/// Created by [DirLister].
 struct TxtStars {
     data: Vec<(PathBuf, Vec<PathBuf>)>
 }
@@ -99,6 +103,10 @@ impl<'a> IntoIterator for &'a TxtStars {
     }
 }
 
+/// Path for `txtmap`. It contains a standard 
+/// library path along with an enum to 
+/// represent a path type meaningful 
+/// to `txtmap`.
 #[derive(Debug, Hash, PartialEq, Eq)]
 struct ListedPath {
     path: PathBuf,
@@ -162,9 +170,16 @@ enum ListedFileType {
     Other
 }
 
-/// todo
+/// Types a linear list of [ListedPath]s
+/// in a way suitable for `txtmap` processing.
+/// 
+/// Todo
 struct StructuredDirList {}
 
+/// Creates a linear list of [ListedPath]s
+/// by walking a specified directory.
+/// Exposes a method to list [TxtStars] in
+/// directory.
 struct DirLister {
     /// A linear list of all paths in the dir.
     dirlist: Vec<ListedPath>
